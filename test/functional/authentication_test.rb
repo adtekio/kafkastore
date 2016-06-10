@@ -13,10 +13,10 @@ class AuthenticaionTest < Minitest::Test
 
   context "authentication" do
     should "prevent access" do
-      ["/sidekiq"
+      ["/sidekiq", "/auth", '/badclicks', '/badclicks/clear_all', '/'
        ].each do |path|
         get path
-        assert_redirect_to("auth/google_auth2", "Failed for #{path}")
+        assert_redirect_to("auth/google_oauth2", "Failed for #{path}")
       end
     end
 
@@ -26,6 +26,17 @@ class AuthenticaionTest < Minitest::Test
         get path
         assert last_response.ok?, "Failed for #{path}"
       end
+    end
+
+    should "redirect to google" do
+      lgr = Object.new.tap do |o|
+        mock(o).info("(google_oauth2) Request phase initiated.") { }
+      end
+      mock(OmniAuth).logger { lgr }
+
+      get "/auth/google_oauth2"
+
+      assert(last_response.headers["Location"] =~ /https:\/\/accounts.google.com\/o\/oauth2\/auth\?access_type=offline/)
     end
   end
 end
